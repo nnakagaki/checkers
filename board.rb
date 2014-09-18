@@ -2,16 +2,24 @@
 load 'piece.rb'
 require 'colorize'
 
+class NoPieceError < ArgumentError
+end
+
+class NoMoveError < ArgumentError
+end
+
+class NotYourPieceError < ArgumentError
+end
+
 class Board
-  def initialize
+  def initialize(player)
+    @p = player
     new_board
   end
 
   def new_board
     @board = Array.new(10) { Array.new(10) }
-    # place_pieces
-    @board[1][1] = Piece.new([1,1], self, :r)
-    @board[8][8] = Piece.new([8,8], self, :b)
+    place_pieces
   end
 
   def place_pieces
@@ -29,20 +37,51 @@ class Board
   end
 
   def move(from, to)
-    piece = self[from]
+    piece = self[from] #
     if piece
       if piece.moves[:slide].include?(to)
         piece.perform_slide(to)
       elsif piece.moves[:jump].include?(to)
         piece.perform_jump(to)
+        extra_jump(piece, to)
       end
     end
+  end
+
+  def extra_jump(piece, to)
+    jump_options = piece.moves[:jump]
+    if jump_options.count > 0
+      draw
+      puts " Would you like to take another piece? (y/n)"
+      answer = gets.chomp.downcase
+      if answer == ?y
+        puts " Your options are #{jump_options}"
+        from = to
+        begin
+          to = @p.get_piece_move_to
+          raise ArgumentError unless jump_options.include?(to)
+        rescue ArgumentError
+          puts " Cannot jump there! Try again..."
+        end
+        move(from, to)
+      end
+    end
+  end
+
+  def valid_from?(from,turn) #
+    raise NoPieceError unless self[from]
+    raise NoMoveError if self[from].all_moves.empty?
+    raise NotYourPieceError unless self[from].color == turn
+  end
+
+  def valid_to?(from,to,turn)
+    raise NoMoveError unless self[from].all_moves.include?(to)
   end
 
   def over?
     red = false
     blue = false
-    @board.flatten.compact.each do |piece|
+    @board.flatten.compact.each do |piece| #all
       piece.color == :r ? red = true : blue = true
     end
 
@@ -86,6 +125,9 @@ class Board
     render = " " * 7 + "╔" + "═" * 32 + "╗" + "\n" + render
     render += " " * 9
     ('A'..'J').each { |letter| render += " #{letter} " }
+    render += "\n" * 2
+
+    render = " Type 's' to save and 'exit' to return to main menu!\n\n" + render
 
     system('clear')
     puts "\n" * 8
