@@ -57,5 +57,3 @@ def show_single_key
 	  puts "SOMETHING ELSE: #{c.inspect}"
 	end
 end
-
-show_single_key

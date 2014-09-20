@@ -1,8 +1,6 @@
 load 'board.rb'
 load 'read_key.rb'
 require 'yaml'
-require 'curses'
-include Curses
 
 class NamingError < ArgumentError
 end
